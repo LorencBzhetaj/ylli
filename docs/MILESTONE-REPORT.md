@@ -157,10 +157,45 @@ finalja me menunë; muzika fillon vetëm me klikim, mbetet aktive kur ndërrohet
 - Temperatura, rrezja dhe shkëlqimi te mockup-i i portretit nuk janë verifikuar ende (M6).
 - Muzika dhe zëri janë tinguj prove; teksti i letrës është draft.
 
+## M5 — Aksesi privat dhe ruajtja · ✅ e implementuar (mbetet testi në iPhone)
+
+- **Ruajtja private** (`src/lib/storage.ts`): një ndërfaqe me dy driver-a, `local` (`private/`, dev) dhe `s3` (bucket privat
+  R2/S3/B2, lexuar nga serveri me nënshkrim SigV4 përmes `aws4fetch`, MIT). Galeria, letra, kapsula dhe audio kalojnë të gjitha
+  nga kjo shtresë. Çelësat e ruajtjes kontrollohen me regex, kështu që traversal-i bllokohet edhe para se të dërgohet kërkesa.
+- **Kufizuesi i provave**: Upstash Redis REST (i përbashkët për çdo instancë serverless) kur është konfiguruar, përndryshe në
+  memorie. Nëse Redis-i nuk përgjigjet, hyrja bllokohet (503). Ka edhe vonesë 350–600 ms pas çdo kodi të gabuar, dhe kontroll Origin (403 për faqe të tjera).
+- **Sesioni**: në prodhim cookie `__Host-nadia_session` (Secure, HttpOnly, SameSite=Strict, Path=/), HMAC me skadim (12 orë).
+  Daljet dërgojnë `Clear-Site-Data: "cache"`.
+- **Header-at**: CSP vetëm `'self'` (pa skripte, fonte apo trackera të jashtëm; `unsafe-eval` vetëm në dev), HSTS në prodhim,
+  COOP, X-Frame-Options, noindex, `no-store` në hyrje, në `/experience/*` dhe në API.
+- **Skriptet**: `npm run test:access` (testi end-to-end i çdo rruge private), `npm run audit:private` (Git/public/build),
+  `npm run private:upload` (ngarkimi te bucket-i; si parazgjedhje bën vetëm provë, dhe placeholder-at nuk ngarkohen pa flamur).
+- **Udhëzuesi i publikimit**: `docs/DEPLOY.md` (variablat, R2, Upstash, verifikimi, lista e kontrollit për iPhone).
+
+### Rezultatet (2026-11-25, rezultate reale)
+
+| Kontrolli | Rezultati |
+| --- | --- |
+| `npm run lint` / `typecheck` | ✅ |
+| `npm test` | ✅ 8 skedarë, 36 teste (shtuar: driver-i S3 me nënshkrim + Range + listim, Redis limiter, fail-closed) |
+| `npm run build` | ✅ |
+| `npm run audit:private` | ✅ asgjë nga `private/` apo `.env` në Git; s'ka `public/`; 16 trace pa skedarë privatë; s'ka media në `.next/static`; teksti i letrës dhe i kapsulës nuk ndodhet në build |
+| `test:access` kundër **dev** | ✅ 77/77 |
+| `test:access` kundër **build-it të prodhimit** (`next start`) | ✅ 77/77: 9 API dhe 2 faqe private refuzohen pa sesion, me cookie të falsifikuar dhe me token të skaduar por të nënshkruar saktë; 5×401 → 429 me Retry-After; Origin i huaj → 403; me sesion çdo media (26 URL) jep 200/206 `no-store` dhe 401 pa sesion; kapsula e kyçur pa mesazh; traversal → 404; dalja e skadon cookie-n |
+| Chromium desktop, build prodhimi | ✅ hyrja (`__Host-` në localhost), udhëtimi 3D, galeria me tekstura, letra; **0 gabime CSP në console** |
+
+### Kufizime / çfarë NUK është verifikuar ende
+
+- **Safari në iPhone: i patestuar**, sepse kërkon telefonin tënd (shih listën te `docs/DEPLOY.md`).
+- **Driver-i S3 dhe Redis-i nuk janë provuar me shërbime të vërteta**, sepse s'ka ende llogari/çelësa. Janë testuar me
+  simulim të protokollit (nënshkrimi SigV4, Range, komandat Redis). Testi i vërtetë bëhet në M7 me `test:access` kundër faqes online.
+- Sesionet janë stateless: "Dil" fshin cookie-n te shfletuesi, por një token i kopjuar mbetet i vlefshëm deri në skadim.
+  Për t'i anuluar të gjitha sesionet menjëherë mjafton të ndërrohet `SESSION_SECRET`.
+- CSP lejon `'unsafe-inline'` për skriptet, sepse Next.js e kërkon pa sistem nonce. Rreziku është i ulët, pasi s'ka
+  përmbajtje nga përdoruesi dhe s'ka skripte të jashtme.
+
 ## Hapat e ardhshëm
 
-- **M5** — ruajtja private për prodhim (mediat jashtë serverit lokal), kufizues përpjekjesh me store të përbashkët, teste
-  të aksesit për çdo aset, skadimi i sesionit, cache, Safari në iPhone + Chromium desktop.
 - **M6** — gjashtë PDF-të e printimit (certifikata, harta, portreti, letra, karta, kopertina), bleed, fontet, korrigjimi i portretit.
 - **M7** — aprovimi yt, pastaj deploy, testi i HTTPS dhe QR-së në telefon.
 

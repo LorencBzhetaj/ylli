@@ -93,4 +93,4 @@ tests/                       teste unit
 
 ## Statusi
 
-M1–M4 janë implementuar (shih raportin). Asnjë deploy nuk bëhet pa aprovim.
+M1–M5 janë implementuar (shih raportin). Publikimi: [docs/DEPLOY.md](docs/DEPLOY.md). Asnjë deploy nuk bëhet pa aprovim.

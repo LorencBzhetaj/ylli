@@ -36,6 +36,8 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Dev only: let a phone on the same Wi-Fi load the dev server (NADIA_LAN_HOST=192.168.x.y). Ignored in production.
+  ...(process.env.NADIA_LAN_HOST ? { allowedDevOrigins: [process.env.NADIA_LAN_HOST] } : {}),
   // Private media and local secrets must never be copied into server bundles.
   outputFileTracingExcludes: {
     '/*': ['./private/**/*', './.env*', './docs/**/*', './assets/**/*', './scripts/**/*', './tests/**/*'],

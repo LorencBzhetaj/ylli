@@ -1,6 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "nadia-dev", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 3000 }
+    { "name": "nadia-dev", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 3000 },
+    { "name": "nadia-prod", "runtimeExecutable": "npm", "runtimeArgs": ["run", "start", "--", "-p", "3100"], "port": 3100 }
   ]
 }
