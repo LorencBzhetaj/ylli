@@ -201,6 +201,7 @@ finalja me menunë; muzika fillon vetëm me klikim, mbetet aktive kur ndërrohet
 
 ### Vendime personale që duhen para finalizimit (jo bllokuese tani)
 
-Emri i dhuruesit dhe data e dedikimit · teksti final i letrës/kartës · fotot · muzika/zëri (opsionale) ·
+✅ Emri i dhuruesit: **pa emër** (vendim i dhuruesit, 2026-11-25) · ✅ teksti i letrës (te `private/text/letter.md`) ·
+Data e dedikimit · teksti i kartës · fotot · muzika/zëri (opsionale) ·
 teksti dhe data e kapsulës · kodi final i hyrjes · URL-ja e hostimit · kërkesat e printerit (bleed, ngjyra, foil) ·
 (opsionale) a duhet një pamje ilustruese e qiellit të 14.03.2006, dhe me çfarë ore lokale.

@@ -49,7 +49,8 @@ export default function Letter() {
             </p>
           ))}
           <p className="letter__closing">Me shumë dashuri,</p>
-          <p className="letter__signature">{data.signature ?? '— (emri i dhuruesit)'}</p>
+          {/* The giver chose to stay unnamed: no signature line unless config/dedication.json sets "giver". */}
+          {data.signature ? <p className="letter__signature">{data.signature}</p> : null}
         </article>
       )}
     </div>
