@@ -4,7 +4,7 @@
  * so the gallery can be tested end-to-end before the real photos arrive.
  * Also a 4 s placeholder video if ffmpeg is on PATH (optional dev tool, not a dependency).
  */
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import sharp from 'sharp'
@@ -57,3 +57,44 @@ if (spawnSync('ffmpeg', ['-version'], { stdio: 'ignore' }).status === 0) {
 
 writeFileSync(path.join(dir, 'gallery.json'), JSON.stringify({ items }, null, 2))
 console.log(`${items.length} placeholder te private/placeholders/`)
+
+// ——— Audio placeholders (soft generated chord; replaced by real licensed files) ———
+const audioDir = path.join(process.cwd(), 'private', 'audio')
+mkdirSync(audioDir, { recursive: true })
+if (spawnSync('ffmpeg', ['-version'], { stdio: 'ignore' }).status === 0) {
+  // A3 + C#4 + E4 sine pad, 30 s, gentle fades, quiet — obviously a placeholder, not music.
+  const pad = (out, secs) =>
+    spawnSync(
+      'ffmpeg',
+      ['-y', '-loglevel', 'error',
+        '-f', 'lavfi', '-i', `sine=frequency=220:duration=${secs}`,
+        '-f', 'lavfi', '-i', `sine=frequency=277.18:duration=${secs}`,
+        '-f', 'lavfi', '-i', `sine=frequency=329.63:duration=${secs}`,
+        '-filter_complex', `amix=inputs=3,volume=0.35,afade=t=in:d=3,afade=t=out:st=${secs - 4}:d=4,tremolo=f=0.2:d=0.3`,
+        '-ac', '2', '-b:a', '96k', path.join(audioDir, out)],
+      { stdio: 'inherit' },
+    )
+  if (pad('music.placeholder.mp3', 30).status === 0) console.log('private/audio/music.placeholder.mp3 (placeholder)')
+  if (pad('capsule-voice.placeholder.mp3', 6).status === 0) console.log('private/audio/capsule-voice.placeholder.mp3 (placeholder)')
+}
+
+// ——— Example time capsule (locked until 14 March 2027) ———
+const textDir = path.join(process.cwd(), 'private', 'text')
+mkdirSync(textDir, { recursive: true })
+const capsuleFile = path.join(textDir, 'capsule.json')
+if (!existsSync(capsuleFile)) {
+  writeFileSync(
+    capsuleFile,
+    JSON.stringify(
+      {
+        unlockAt: '2027-03-14T00:00:00+01:00',
+        title: 'Për ditëlindjen e 21-të',
+        message: 'PLACEHOLDER — mesazhi yt për të ardhmen do të vendoset këtu.',
+        voice: 'capsule-voice.placeholder.mp3',
+      },
+      null,
+      2,
+    ),
+  )
+  console.log('private/text/capsule.json (shembull, i kyçur deri më 14.03.2027)')
+}

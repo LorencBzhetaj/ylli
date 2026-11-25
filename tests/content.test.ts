@@ -19,11 +19,17 @@ describe('dedication content', () => {
   it('never claims official naming', () => {
     expect(dedication.officialNaming).toBe(false)
     expect(componentText).toMatch(/nuk është emërtim zyrtar/)
+    // the certificate says "dedikuar simbolikisht", never "emërtuar" / "emërtimi i yllit" / "regjistri i yjeve"
+    const cert = read('src/components/Certificate.tsx')
+    expect(cert).toMatch(/dedikuar simbolikisht/)
+    expect(cert).toMatch(/IAU/)
+    expect(cert.toLowerCase()).not.toMatch(/emërtimi i yllit|regjistri i yjeve|emërtuar zyrtarisht/)
   })
 
-  it('keeps astronomy flagged as unverified until M4', () => {
-    expect(regulus.verified).toBe(false)
-    expect(dedication.astronomyVerified).toBe(false)
+  it('records verified astronomy with sources (M4)', () => {
+    expect(regulus.verified).toBe(true)
+    expect(regulus.sources.some((s) => s.includes('simbad'))).toBe(true)
+    expect(dedication.astronomyVerified).toBe(true)
   })
 
   it('uses correct Albanian diacritics in key UI strings', () => {

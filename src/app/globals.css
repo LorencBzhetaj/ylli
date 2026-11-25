@@ -310,9 +310,11 @@ button {
 }
 .top-bar {
   position: fixed;
-  z-index: 20;
+  z-index: 30;
   top: 0;
   right: 0;
+  display: flex;
+  gap: 0.5rem;
   padding: max(var(--space-2), env(safe-area-inset-top)) var(--space-3) 0;
 }
 

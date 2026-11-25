@@ -13,10 +13,13 @@ Statusi: **P** = placeholder i etiketuar · **G** = gati · **M** = mungon (duhe
 | 12 foto + 1 video PLACEHOLDER | M3 galeria (testim) | P — etiketa "Placeholder" në çdo kujtim | gjeneruar nga `npm run gallery:placeholders` (sharp + ffmpeg) | `private/placeholders/` (jashtë Git) |
 | 10–20 foto origjinale | M3 galeria | M | dhuruesi | `private/gallery/` → `npm run gallery:prepare` |
 | Video të shkurtra (opsionale) | M3 galeria | M | dhuruesi | `private/gallery/` |
-| Muzikë e licencuar (opsionale) | M4 audio | M | dhuruesi + leja | `private/audio/` |
-| Mesazh zanor (opsional) | M4 kapsula | M | dhuruesi | `private/audio/` |
-| Teksti final i letrës dhe kartës | M4 / M6 | M (Claude mund të hartojë draft) | dhuruesi | `private/text/` |
+| Muzikë e licencuar (opsionale) | M4 audio | P: tingull prove i gjeneruar (`music.placeholder.mp3`), shënuar "provë" | dhuruesi + leja | `private/audio/music.mp3` |
+| Mesazh zanor (opsional) | M4 kapsula | P: tingull prove | dhuruesi | `private/audio/` + `capsule.json` |
+| Teksti final i letrës | M4 / M6 | P: draft i etiketuar, bazuar në mockup | dhuruesi | `private/text/letter.md` |
+| Teksti i kartës A6 | M6 | M | dhuruesi | — |
+| Kapsula e kohës (teksti + data) | M4 | P: shembull i kyçur deri më 14.03.2027 | dhuruesi | `private/text/capsule.json` |
+| 175 yje rreth Luanit | M4 harta | G | SIMBAD TAP, 2026-11-25 (me mirënjohje) | `src/data/sky-region.json` |
 | Klipe Kling/Higgsfield (opsionale) | tranzicione | M (jo të nevojshme) | dhuruesi | `private/video/` |
-| Vlerat astronomike të Regulus | zbulimi, certifikata | P — "Vlera paraprake · në verifikim" | SPEC; verifikim me SIMBAD në M4 | `src/lib/astronomy.ts` |
+| Vlerat astronomike të Regulus | zbulimi, certifikata, harta | G, verifikuar me SIMBAD më 2026-11-25 (shih docs/ASTRONOMY.md) | SIMBAD | `src/lib/astronomy.ts` |
 | Data e dedikimit, emri i dhuruesit | certifikata, letra | M | dhuruesi | `config/dedication.json` |
 | URL publike / QR | certifikata, PDF | M (pas aprovimit të deploy-it) | — | `config/dedication.json` |

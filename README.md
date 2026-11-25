@@ -53,6 +53,20 @@ npm run gallery:prepare        # përgatit fotot e vërteta nga private/gallery/
 Sapo `private/gallery/.cache/` ekziston, faqja përdor fotot e vërteta në vend të placeholder-ave.
 Mediat shërbehen vetëm nga `/api/private/media/…` pas hyrjes, kurrë nga `public/`.
 
+## Letra, kapsula e kohës, muzika (privat, jashtë Git)
+
+| Skedari | Çfarë bën |
+| --- | --- |
+| `private/text/letter.md` | Teksti final i letrës (rreshti bosh = paragraf i ri). Pa të shfaqet një draft i etiketuar. |
+| `private/text/capsule.json` | `{ "unlockAt": "2027-03-14T00:00:00+01:00", "title": "…", "message": "…", "voice": "zeri.mp3" }`. Serveri nuk e dërgon mesazhin para datës. |
+| `private/audio/music.mp3` | Muzikë e licencuar (opsionale). Luan vetëm kur shtypet "♪ Muzika". |
+| `private/audio/<voice>` | Mesazh zanor për kapsulën (opsional). |
+
+`npm run gallery:placeholders` krijon edhe tingujt e provës dhe një kapsulë shembull (e kyçur deri më 14.03.2027).
+
+Certifikata: kapitulli VIII, ose `/experience/certifikata` për A4 → "Printo / Ruaj si PDF".
+Astronomia dhe burimet: [docs/ASTRONOMY.md](docs/ASTRONOMY.md).
+
 ## Struktura
 
 ```
@@ -79,4 +93,4 @@ tests/                       teste unit
 
 ## Statusi
 
-M1, M2 dhe M3 janë implementuar (shih raportin). Asnjë deploy nuk bëhet pa aprovim.
+M1–M4 janë implementuar (shih raportin). Asnjë deploy nuk bëhet pa aprovim.

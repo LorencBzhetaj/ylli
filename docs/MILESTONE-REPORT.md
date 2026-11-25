@@ -105,12 +105,67 @@ fundit pas kalimit 2D→3D; kujtimi i kaluar mbulonte ekranin në celular.
 - Safari në iPhone nuk është testuar (M5).
 - Lexuesi i ekranit (VoiceOver/NVDA) nuk është provuar; strukturat ARIA janë vendosur, por pa testim me lexues.
 
+## M4 — Astronomia, harta, letra, kapsula, audio, certifikata, finalja · ✅ e implementuar
+
+Rrjedha e plotë sipas SPEC: I zarfi → II udhëtimi → III ylli → IV kujtimet → V harta → VI letra → VII kapsula →
+VIII certifikata → IX finalja. Çdo kapitull ka "‹ Mbrapa / Vazhdo ›", dhe finalja ka menunë e të gjithë kapitujve.
+
+- **Astronomia e verifikuar me SIMBAD** (hollësitë te `docs/ASTRONOMY.md`): RA/Dec ✅, distanca 79.3 ± 0.7 vite-dritë ✅,
+  **magnituda e korrigjuar 1.35 → 1.40**, tipi spektral B8IVn (mockup-i i portretit thotë "B7 V", ndreqet në M6).
+  `astronomyVerified: true`; etiketa "Vlera paraprake" u hoq.
+- **Harta interaktive** (`SkyMap`): 175 yje realë nga SIMBAD, figura e Luanit me vija ari (pa luan), Regulus i theksuar,
+  emrat kryesorë, konstelacionet fqinje, rrjeti i koordinatave, legjenda, epoka J2000, lindja majtas. Lëvizet me tërheqje,
+  zmadhohet me rrotë, me dy gishta ose me +/−, dhe ka butonat "Regulus" e "Gjithë Luani"; me tastierë: shigjetat, +/−, 0.
+- **Udhëzuesi për Tiranën** (`ObservingGuide`): për çdo datë jep kohën më të mirë (Regulus ≥ 10°, Dielli ≤ −12°), drejtimin në
+  shqip (veri…veriperëndim), lindjen, kalimin në pikën më të lartë dhe perëndimin, plus pozicionin "Tani". Llogaritet në shfletues me algoritmet
+  e Meeus, të testuara kundër shembujve të zgjidhur të librit.
+- **Letra**: zarf me vulë → letra hapet → paragrafët shfaqen njëri pas tjetrit (pa animacion me reduced motion). Teksti
+  vjen nga `private/text/letter.md` përmes `/api/private/letter`. Deri atëherë shfaqet një **draft** i etiketuar, bazuar në mockup.
+- **Kapsula e kohës**: `private/text/capsule.json` (data e hapjes, titulli, mesazhi, zëri opsional). **Serveri vendos** dhe nuk e dërgon
+  mesazhin para datës (ora e serverit); zëri kthen 404 deri atëherë. UI tregon datën dhe ditët e mbetura. Nuk është vulë
+  kriptografike, sepse kush ka qasje në server e lexon. Kjo shkruhet edhe te kodi.
+- **Muzika**: butoni "♪ Muzika" te shiriti i sipërm, **kurrë autoplay**. Mbetet aktive kur ndërrohen kapitujt. Përdor
+  `private/audio/music.mp3` nëse ekziston, përndryshe një tingull prove të gjeneruar, të shënuar "provë".
+- **Certifikata dixhitale**: i njëjti dizajn si mockup-i (fildish, kornizë ari me zbukurime, vulë, tabela me të dhënat,
+  ID private, vend për QR). Teksti thotë "**Dedikimi simbolik i një ylli**" dhe "dedikuar simbolikisht", jo "Emërtimi i yllit" apo
+  "Regjistri i yjeve" si te mockup-i, që të mos ketë pretendim zyrtar. Ka edhe shënimin e imët për IAU dhe SIMBAD. Faqja
+  `/experience/certifikata` jep A4 të saktë për printim / "Ruaj si PDF". Data e dedikimit shfaqet "në pritje".
+
+### Rezultatet (2026-11-25)
+
+| Komanda | Rezultati |
+| --- | --- |
+| `npm run lint` | ✅ 0 gabime |
+| `npm run typecheck` | ✅ |
+| `npm test` | ✅ 6 skedarë, 31 teste (shtuar: Meeus 12.a/12.b/13.b/21.b/25.a, zonat kohore, Regulus nga Tirana, kapsula, letra, formulimi i certifikatës) |
+| `npm run build` | ✅ |
+
+Me `curl`: `/api/private/letter|capsule|audio|audio/music|audio/capsule` pa sesion → 401; `/experience/certifikata` → 307.
+Me sesion: kapsula e kyçur kthen vetëm `unlockAt`; zëri i kapsulës → 404; muzika me Range → 206 `audio/mpeg`; emra skedarësh
+të pavlefshëm → 404.
+
+Në shfletuesin e integruar (desktop dhe 375×812): harta (drapëri dhe yjet e Luanit në vend të saktë), udhëzuesi (25.11.2026:
+lind 22:45, në pikën më të lartë 05:30 drejt jugut ≈ 61°), letra, kapsula e kyçur (109 ditë), certifikata (kapitulli dhe faqja A4),
+finalja me menunë; muzika fillon vetëm me klikim, mbetet aktive kur ndërrohet kapitulli dhe ndalet.
+
+### Kufizime / çfarë NUK është verifikuar ende
+
+- **Printimi / PDF nga shfletuesi nuk është provuar** (mjeti nuk mund të hapë dialogun e printimit). CSS-ja `@page A4` është gati;
+  PDF-të përfundimtare janë puna e M6.
+- Gjendja "e hapur" e kapsulës është testuar vetëm me teste unit, jo në shfletues (shembulli hapet më 14.03.2027).
+- Faqja kryesore e SIMBAD (`simbad.cds.unistra.fr`) nuk u arrit dot; u përdor pasqyra zyrtare `simbad.harvard.edu`.
+- Temperatura, rrezja dhe shkëlqimi te mockup-i i portretit nuk janë verifikuar ende (M6).
+- Muzika dhe zëri janë tinguj prove; teksti i letrës është draft.
+
 ## Hapat e ardhshëm
 
-- **M4** — verifikimi me SIMBAD + efemeridë, harta interaktive e qiellit (Luani pa vizatim luani), letra, kapsula, certifikata.
-- **M5–M7** — ruajtja private, PDF-të e printimit, deploy vetëm pas aprovimit.
+- **M5** — ruajtja private për prodhim (mediat jashtë serverit lokal), kufizues përpjekjesh me store të përbashkët, teste
+  të aksesit për çdo aset, skadimi i sesionit, cache, Safari në iPhone + Chromium desktop.
+- **M6** — gjashtë PDF-të e printimit (certifikata, harta, portreti, letra, karta, kopertina), bleed, fontet, korrigjimi i portretit.
+- **M7** — aprovimi yt, pastaj deploy, testi i HTTPS dhe QR-së në telefon.
 
 ### Vendime personale që duhen para finalizimit (jo bllokuese tani)
 
 Emri i dhuruesit dhe data e dedikimit · teksti final i letrës/kartës · fotot · muzika/zëri (opsionale) ·
-teksti dhe data e kapsulës · kodi final i hyrjes · URL-ja e hostimit · kërkesat e printerit (bleed, ngjyra, foil).
+teksti dhe data e kapsulës · kodi final i hyrjes · URL-ja e hostimit · kërkesat e printerit (bleed, ngjyra, foil) ·
+(opsionale) a duhet një pamje ilustruese e qiellit të 14.03.2006, dhe me çfarë ore lokale.

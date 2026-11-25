@@ -20,6 +20,25 @@ export type Dedication = {
 
 export const dedication = raw as Dedication
 
+/** Certificate data — shared by the in-experience preview and the printable page. */
+export async function certificateProps() {
+  const { regulus } = await import('./astronomy')
+  return {
+    recipient: dedication.recipient,
+    starName: regulus.name,
+    designation: regulus.designation,
+    constellationSq: regulus.constellationSq,
+    ra: regulus.ra,
+    dec: regulus.dec,
+    epoch: regulus.epoch,
+    distanceLy: regulus.distanceLy,
+    magnitude: regulus.apparentMagnitude,
+    dedicationDate: dedication.dedicationDate ? formatDateSq(dedication.dedicationDate) : null,
+    privateId: dedication.privateId,
+    qrReady: false, // QR is added only after the final HTTPS URL is approved and tested (M7)
+  }
+}
+
 /** "14 Mars 2006" — Albanian month names, no locale dependency. */
 const MONTHS_SQ = ['Janar', 'Shkurt', 'Mars', 'Prill', 'Maj', 'Qershor', 'Korrik', 'Gusht', 'Shtator', 'Tetor', 'Nëntor', 'Dhjetor']
 export function formatDateSq(iso: string): string {
