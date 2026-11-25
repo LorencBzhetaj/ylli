@@ -5,6 +5,7 @@ import { Component, useCallback, useEffect, useState, useSyncExternalStore, type
 import { useRouter } from 'next/navigation'
 import Envelope from './Envelope'
 import StaticSky from './StaticSky'
+import Gallery from './gallery/Gallery'
 import type { ScenePhase } from './JourneyScene'
 
 // Client-only, lazy-loaded 3D scene (Three.js never ships in the entry bundle).
@@ -30,7 +31,7 @@ type Props = {
   astronomyVerified: boolean
 }
 
-type Phase = 'envelope' | ScenePhase
+type Phase = 'envelope' | ScenePhase | 'gallery'
 
 // ——— environment hooks ———
 function subscribeMotion(cb: () => void) {
@@ -104,6 +105,24 @@ export default function Experience({ recipient, privateId, birthday, star, astro
   async function logout() {
     await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {})
     router.replace('/')
+  }
+
+  const topBar = (
+    <div className="top-bar">
+      <button className="btn btn--ghost" type="button" onClick={logout}>
+        Dil
+      </button>
+    </div>
+  )
+
+  if (phase === 'gallery') {
+    // The journey canvas is unmounted here (GPU resources released) — one WebGL context at a time.
+    return (
+      <>
+        <Gallery can3D={use3D} reducedMotion={reducedMotion} onContinue={() => setPhase('finale')} />
+        {topBar}
+      </>
+    )
   }
 
   if (phase === 'envelope') {
@@ -184,8 +203,11 @@ export default function Experience({ recipient, privateId, birthday, star, astro
               {use3D ? ' Pamja e udhëtimit është vizualizim artistik.' : ''}
             </p>
             <div className="actions">
-              <button className="btn btn--gold" type="button" onClick={() => setPhase('finale')}>
-                Vazhdo
+              <button className="btn btn--gold" type="button" onClick={() => setPhase('gallery')}>
+                Kujtimet
+              </button>
+              <button className="btn btn--ghost" type="button" onClick={() => setPhase('finale')}>
+                Te finalja
               </button>
             </div>
           </section>
@@ -204,8 +226,11 @@ export default function Experience({ recipient, privateId, birthday, star, astro
               <button className="btn btn--gold" type="button" onClick={replay}>
                 Përsërit udhëtimin
               </button>
-              <button className="btn" type="button" onClick={() => setPhase('reveal')}>
-                Kthehu te ylli
+              <button className="btn" type="button" onClick={() => setPhase('gallery')}>
+                Kujtimet
+              </button>
+              <button className="btn btn--ghost" type="button" onClick={() => setPhase('reveal')}>
+                Ylli
               </button>
               <button className="btn btn--ghost" type="button" onClick={() => setPhase('envelope')}>
                 Te zarfi

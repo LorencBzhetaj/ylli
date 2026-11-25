@@ -1,6 +1,6 @@
 {
   "name": "nadia",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "NADIA — dhuratë private ditëlindjeje: yll simbolik, website interaktiv dhe paketë printimi.",
   "scripts": {
@@ -11,7 +11,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "hash-code": "node scripts/hash-code.mjs",
-    "check": "npm run lint && npm run typecheck && npm run test && npm run build"
+    "check": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "gallery:placeholders": "node scripts/make-placeholders.mjs && node scripts/prepare-gallery.mjs private/placeholders",
+    "gallery:prepare": "node scripts/prepare-gallery.mjs"
   },
   "engines": {
     "node": ">=20.9"
@@ -31,6 +33,7 @@
     "@types/three": "0.187.0",
     "eslint": "9.39.5",
     "eslint-config-next": "16.4.6",
+    "sharp": "0.35.5",
     "typescript": "5.9.3",
     "vitest": "5.1.2"
   }

@@ -56,9 +56,57 @@ udhëtimi (Toka, mjegullnajat, afrimi te ylli), zbulimi, finalja.
 - Vlerat astronomike janë kandidate nga SPEC, jo të verifikuara.
 - Screenshot-et janë marrë vetëm në sesion, nuk janë ruajtur në repo.
 
+## M3 — Galeria "Yjësia e kujtimeve" · ✅ e implementuar me placeholder (në pritje të fotove origjinale)
+
+- Rrjedha: zbulimi → **Kujtimet** → finalja (nga finalja mund të kthehesh te kujtimet ose te ylli).
+- **3D**: fotot qëndrojnë si plane në thellësi të ndryshme, të lidhura me vija të holla ari; kamera lëviz me
+  rrotë, me tërheqje me gisht, me butonat ‹ › dhe me shigjetat/Home/End; pasi ndalon, kamera ndalet te kujtimi më i afërt.
+  Kujtimet që kamera i ka kaluar zbehen. Teksturat ngarkohen vetëm për ±3 kujtime (±2 në celular) dhe lirohen kur largohen.
+  Vetëm një kontekst WebGL në një kohë (skena e udhëtimit lirohet kur hapet galeria).
+- **Shikuesi** (lightbox): `role="dialog"`, fokusi te "Mbyll", fokusi i bllokuar brenda, Esc mbyll dhe e kthen fokusin,
+  ←/→ dhe rrëshqitje me gisht për të mëparshmin/të radhësin, numëruesi, përshkrimi, ngarkimi paraprak i fqinjëve.
+  Videot: `controls`, `playsInline`, `preload="metadata"`, kurrë autoplay.
+- **2D fallback**: rrjet me fotot në përmasat e tyre, me renditje sipas rreshtave; aktivizohet automatikisht pa WebGL ose
+  me reduced motion, dhe me butonin "Pamje 2D / 3D".
+- **Pipeline**: `npm run gallery:prepare` (sharp) → kopje WebP 720 px / 2048 px, orientimi EXIF, pa shtrembërim;
+  indeksi `private/<dir>/.cache/index.json`. Placeholder-at: `npm run gallery:placeholders` (12 foto me përmasa
+  të ndryshme + 1 video 4 s me ffmpeg), secili i etiketuar "Placeholder".
+- **Privatësia**: lista vjen nga `/api/private/gallery` dhe mediat nga `/api/private/media/<id>/<thumb|full|video>`,
+  vetëm pas hyrjes (proxy + kontroll i dytë në route), `Cache-Control: no-store`. Klienti nuk sheh emra skedarësh;
+  ID-të kontrollohen me regex dhe rruga verifikohet që të mos dalë nga dosja `.cache`. Video me HTTP Range (206/416).
+- **Build**: u zbulua që leximi dinamik i skedarëve bënte që Turbopack të gjurmonte gjithë projektin, duke përfshirë
+  `private/`. Rregulluar me `turbopackIgnore` + `outputFileTracingExcludes` (`private/`, `.env*`, `docs/`, `assets/`…);
+  kontrolluar në `*.nft.json`: asnjë skedar privat në bundle. Turbopack ende jep paralajmërimin për gjurmimin e kodit burimor (i padëmshëm).
+
+### Rezultatet (2026-11-25)
+
+| Komanda | Rezultati |
+| --- | --- |
+| `npm run lint` | ✅ 0 gabime |
+| `npm run typecheck` | ✅ |
+| `npm test` | ✅ 4 skedarë, 18 teste (shtuar: indeksi, rrugët e mediave, traversal, Range) |
+| `npm run build` | ✅ (1 paralajmërim, shih më sipër) |
+
+Teste manuale me `curl`: lista dhe mediat pa sesion → 401; ID e panjohur / traversal (`..%2F`) / variant i gabuar → 404;
+`Range: bytes=0-999` → 206 me `Content-Range`; range jashtë skedarit → 416.
+
+Kontroll në shfletuesin e integruar (Chromium), desktop dhe 375×812: 3D me tekstura, navigim me butona dhe rrotë,
+hapja e videos (nuk luan vetë), ←/→ në shikues, Esc + kthimi i fokusit, sinkronizimi 3D pas shikuesit, pamja 2D
+(13/13 foto të ngarkuara), kalimi galeri → finale.
+
+Gabime të gjetura dhe të rregulluara gjatë testimit: humbja e qëllimshme e kontekstit WebGL nga R3F kur mbyllej skena
+çaktivizonte 3D-në; teksturat dilnin të zeza (materiali ripërdorej pa rikompilim); kamera nuk kthehej te kujtimi i
+fundit pas kalimit 2D→3D; kujtimi i kaluar mbulonte ekranin në celular.
+
+### Kufizime / çfarë NUK është verifikuar ende
+
+- Nuk është testuar me **fotot origjinale** (s'janë dhënë ende) (HEIC nuk mbështetet: duhet konvertuar në JPG).
+- Tërheqja me gisht në 3D dhe rrëshqitja në shikues janë provuar vetëm me logjikë/emulim, jo në një telefon real.
+- Safari në iPhone nuk është testuar (M5).
+- Lexuesi i ekranit (VoiceOver/NVDA) nuk është provuar; strukturat ARIA janë vendosur, por pa testim me lexues.
+
 ## Hapat e ardhshëm
 
-- **M3** — galeria "Yjësia e kujtimeve" me placeholder (pastaj fotot tuaja nga `private/`).
 - **M4** — verifikimi me SIMBAD + efemeridë, harta interaktive e qiellit (Luani pa vizatim luani), letra, kapsula, certifikata.
 - **M5–M7** — ruajtja private, PDF-të e printimit, deploy vetëm pas aprovimit.
 

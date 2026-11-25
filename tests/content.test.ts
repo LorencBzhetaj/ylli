@@ -5,8 +5,9 @@ import { dedication, formatDateSq } from '@/lib/dedication'
 import { regulus } from '@/lib/astronomy'
 
 const read = (p: string) => readFileSync(path.join(__dirname, '..', p), 'utf8')
-const componentText = readdirSync(path.join(__dirname, '..', 'src/components'))
-  .map((f) => read(`src/components/${f}`))
+const componentText = (readdirSync(path.join(__dirname, '..', 'src/components'), { recursive: true }) as string[])
+  .filter((f) => f.endsWith('.tsx'))
+  .map((f) => read(path.join('src/components', f)))
   .join('\n')
 
 describe('dedication content', () => {
@@ -26,7 +27,7 @@ describe('dedication content', () => {
   })
 
   it('uses correct Albanian diacritics in key UI strings', () => {
-    for (const s of ['Fillo udhëtimin', 'Gëzuar ditëlindjen', 'Një yll për ty', 'Vizualizim artistik', 'vite-dritë']) {
+    for (const s of ['Fillo udhëtimin', 'Gëzuar ditëlindjen', 'Një yll për ty', 'Vizualizim artistik', 'vite-dritë', 'Yjësia e kujtimeve', 'Kujtimi i mëparshëm', 'Kujtimi i radhës']) {
       expect(componentText).toContain(s)
     }
     // common mistakes: missing ë

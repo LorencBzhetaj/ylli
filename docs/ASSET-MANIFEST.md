@@ -10,7 +10,8 @@ Statusi: **P** = placeholder i etiketuar · **G** = gati · **M** = mungon (duhe
 | Toka, yjet, mjegullnajat, Regulus | udhëtimi 3D | G (procedural) | kod origjinal GLSL, pa tekstura | `src/components/JourneyScene.tsx` |
 | Qielli 2D (fallback) | pa WebGL / reduced motion | G (procedural) | kod origjinal SVG | `src/components/StaticSky.tsx` |
 | Vula e artë / emblema | zarfi, hyrja | G | SVG origjinal | `src/components/Emblem.tsx` |
-| 10–20 foto origjinale | M3 galeria | M | dhuruesi | `private/gallery/` |
+| 12 foto + 1 video PLACEHOLDER | M3 galeria (testim) | P — etiketa "Placeholder" në çdo kujtim | gjeneruar nga `npm run gallery:placeholders` (sharp + ffmpeg) | `private/placeholders/` (jashtë Git) |
+| 10–20 foto origjinale | M3 galeria | M | dhuruesi | `private/gallery/` → `npm run gallery:prepare` |
 | Video të shkurtra (opsionale) | M3 galeria | M | dhuruesi | `private/gallery/` |
 | Muzikë e licencuar (opsionale) | M4 audio | M | dhuruesi + leja | `private/audio/` |
 | Mesazh zanor (opsional) | M4 kapsula | M | dhuruesi | `private/audio/` |

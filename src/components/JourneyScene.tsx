@@ -69,20 +69,26 @@ const EARTH_LOOK = new THREE.Vector3(0, 0, 0)
 
 function CameraRig({ phase, reducedMotion, runId, onArrive }: Omit<Props, 'onError'>) {
   const { camera } = useThree()
-  const progress = useRef(reducedMotion ? 1 : 0)
+  // Mounted mid-story (e.g. returning from the gallery to the finale) → start at the star, not at Earth.
+  const startsAtEnd = reducedMotion || phase !== 'journey'
+  const progress = useRef(startsAtEnd ? 1 : 0)
   const recede = useRef(0)
-  const arrived = useRef(reducedMotion)
+  const arrived = useRef(startsAtEnd)
+  const phaseRef = useRef(phase)
   const look = useMemo(() => new THREE.Vector3(), [])
   const pos = useMemo(() => new THREE.Vector3(), [])
   const back = useMemo(() => new THREE.Vector3(), [])
 
   useEffect(() => {
-    progress.current = reducedMotion ? 1 : 0
+    phaseRef.current = phase
+  }, [phase])
+
+  useEffect(() => {
+    // Restart only when the parent bumps runId (replay) or motion preference changes.
+    const end = reducedMotion || phaseRef.current !== 'journey'
+    progress.current = end ? 1 : 0
     recede.current = 0
-    arrived.current = reducedMotion
-    if (reducedMotion) onArrive()
-    // onArrive is stable from the parent; restart only on runId / motion change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    arrived.current = end
   }, [runId, reducedMotion])
 
   useFrame((_, rawDt) => {
@@ -399,7 +405,10 @@ export default function JourneyScene(props: Props) {
       gl={{ antialias: true, powerPreference: 'high-performance', alpha: false }}
       camera={{ fov: 50, near: 0.05, far: 2000, position: [2.1, 0.55, 2.9] }}
       onCreated={({ gl }) => {
-        gl.domElement.addEventListener('webglcontextlost', (e) => {
+        const canvas = gl.domElement
+        canvas.addEventListener('webglcontextlost', (e) => {
+          // R3F force-loses the context on purpose after unmount; only a loss while on screen is a failure.
+          if (!canvas.isConnected) return
           e.preventDefault()
           props.onError()
         })

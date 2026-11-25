@@ -11,6 +11,10 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Private media and local secrets must never be copied into server bundles (M5: no private assets in build).
+  outputFileTracingExcludes: {
+    '/*': ['./private/**/*', './.env*', './docs/**/*', './assets/**/*', './scripts/**/*', './tests/**/*'],
+  },
   async headers() {
     return [
       { source: '/:path*', headers: securityHeaders },

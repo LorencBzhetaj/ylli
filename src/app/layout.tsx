@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Cormorant_Garamond, Jost } from 'next/font/google'
 import './globals.css'
+import './gallery.css'
 
 // Both fonts: SIL Open Font License 1.1, self-hosted at build time by next/font.
 const display = Cormorant_Garamond({
