@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+
+# next.js
+.next/
+out/
+build/
+next-env.d.ts
+*.tsbuildinfo
+
+# env & secrets — never commit
+.env
+.env.*
+!.env.example
+
+# private personal assets (photos, videos, audio, letter text) — never commit
+private/*
+!private/README.md
+
+# generated print exports & screenshots
+exports/
+screenshots/
+
+# misc
+.DS_Store
+Thumbs.db
+npm-debug.log*
+.vercel
