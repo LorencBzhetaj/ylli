@@ -6,7 +6,18 @@
  * (":" instead of "$" so Next.js env expansion never mangles it.)
  */
 
-export const SESSION_COOKIE = 'nadia_session'
+const PROD = process.env.NODE_ENV === 'production'
+
+/**
+ * In production the cookie uses the __Host- prefix: the browser then only accepts it with Secure, Path=/
+ * and no Domain — it can't be set by a sub-domain or sent over plain HTTP.
+ */
+export const SESSION_COOKIE = PROD ? '__Host-nadia_session' : 'nadia_session'
+
+export function sessionCookieOptions(maxAgeSeconds: number) {
+  return { httpOnly: true, secure: PROD, sameSite: 'strict' as const, path: '/', maxAge: maxAgeSeconds }
+}
+
 const encoder = new TextEncoder()
 
 export function b64url(bytes: ArrayBuffer | Uint8Array): string {

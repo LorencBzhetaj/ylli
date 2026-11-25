@@ -1,10 +1,9 @@
 /**
  * Server-only access to the prepared private gallery (see scripts/prepare-gallery.mjs).
- * Media are read from private/<dir>/.cache — never from public/ — and only by id from the index,
- * so a request can never name an arbitrary file path.
+ * Reads gallery/index.json from the private store (local private/… or a private S3/R2 bucket).
+ * Media are addressed only by id + variant from the index — a request can never name a file.
  */
-import { existsSync, readFileSync, statSync } from 'node:fs'
-import path from 'node:path'
+import { getStore } from './storage'
 
 export type GalleryItem = {
   id: string
@@ -25,34 +24,28 @@ export type PublicGalleryItem = Omit<GalleryItem, 'video' | 'mime' | 'hasPoster'
   video: string | null
 }
 
-export type Variant = 'thumb' | 'full' | 'video'
-
 type Index = { source: string; items: GalleryItem[] }
 
 const ID = /^m\d{2,3}$/
+const TTL_MS = 15_000
+let cached: { at: number; index: Index | null; storeKind: string } | null = null
 
-function candidateDirs(): string[] {
-  // turbopackIgnore: these are runtime-only local folders; they must never be traced into the build.
-  const root = /* turbopackIgnore: true */ process.cwd()
-  const fromEnv = process.env.GALLERY_DIR ? [path.resolve(root, process.env.GALLERY_DIR)] : []
-  return [...fromEnv, path.join(root, 'private', 'gallery'), path.join(root, 'private', 'placeholders')]
+export async function loadGallery(): Promise<Index | null> {
+  const store = getStore()
+  if (cached && cached.storeKind === store.kind && Date.now() - cached.at < TTL_MS) return cached.index
+  const raw = await store.readText('gallery/index.json')
+  let index: Index | null = null
+  if (raw) {
+    const parsed = JSON.parse(raw) as Index
+    index = { source: parsed.source, items: (parsed.items ?? []).filter((it) => ID.test(it.id)) }
+  }
+  cached = { at: Date.now(), index, storeKind: store.kind }
+  return index
 }
 
-let cached: { dir: string; mtime: number; index: Index } | null = null
-
-export function loadGallery(): { cacheDir: string; index: Index } | null {
-  for (const dir of candidateDirs()) {
-    const cacheDir = path.join(dir, '.cache')
-    const file = path.join(cacheDir, 'index.json')
-    if (!existsSync(file)) continue
-    const mtime = statSync(file).mtimeMs
-    if (cached && cached.dir === cacheDir && cached.mtime === mtime) return { cacheDir, index: cached.index }
-    const index = JSON.parse(readFileSync(file, 'utf8')) as Index
-    index.items = (index.items ?? []).filter((it) => ID.test(it.id))
-    cached = { dir: cacheDir, mtime, index }
-    return { cacheDir, index }
-  }
-  return null
+/** Tests only. */
+export function __resetGalleryCache() {
+  cached = null
 }
 
 export function toPublic(item: GalleryItem): PublicGalleryItem {
@@ -72,31 +65,21 @@ export function toPublic(item: GalleryItem): PublicGalleryItem {
   }
 }
 
-/** Resolve a media file for (id, variant), or null. Guards against path escape. */
-export function resolveMedia(id: string, variant: string): { file: string; mime: string } | null {
+/** Map (id, variant) → storage key + mime, or null. */
+export async function resolveMedia(id: string, variant: string): Promise<{ key: string; mime: string } | null> {
   if (!ID.test(id) || !['thumb', 'full', 'video'].includes(variant)) return null
-  const g = loadGallery()
-  if (!g) return null
-  const item = g.index.items.find((it) => it.id === id)
+  const index = await loadGallery()
+  const item = index?.items.find((it) => it.id === id)
   if (!item) return null
-  let name: string
-  let mime: string
   if (variant === 'video') {
-    if (item.type !== 'video' || !item.video) return null
-    name = item.video
-    mime = item.mime ?? 'video/mp4'
-  } else {
-    if (item.type === 'video' && !item.hasPoster) return null
-    name = `${id}-${variant}.webp`
-    mime = 'image/webp'
+    if (item.type !== 'video' || !item.video || !/^[\w.-]+$/.test(item.video)) return null
+    return { key: `gallery/${item.video}`, mime: item.mime ?? 'video/mp4' }
   }
-  const file = path.resolve(g.cacheDir, name)
-  const rel = path.relative(g.cacheDir, file)
-  if (rel.startsWith('..') || path.isAbsolute(rel) || !existsSync(file)) return null
-  return { file, mime }
+  if (item.type === 'video' && !item.hasPoster) return null
+  return { key: `gallery/${id}-${variant}.webp`, mime: 'image/webp' }
 }
 
-/** Parse a single HTTP byte range. Returns null for absent/unsatisfiable/multi ranges. */
+/** Parse a single HTTP byte range. Returns null for absent, 'invalid' for unsatisfiable/multi ranges. */
 export function parseRange(header: string | null, size: number): { start: number; end: number } | 'invalid' | null {
   if (!header) return null
   const m = /^bytes=(\d*)-(\d*)$/.exec(header.trim())

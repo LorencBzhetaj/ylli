@@ -1,20 +1,16 @@
 /**
- * Server-only personal content: letter, time capsule, audio.
- * Lives in private/ (git-ignored, never in public/ or the build trace); served only by session-gated API routes.
+ * Server-only personal content: letter, time capsule, audio — read from the private store
+ * (local private/… in development, a private S3/R2 bucket in production). Served only by session-gated routes.
  *
- *   private/text/letter.md        final letter (plain text, blank line = new paragraph)
- *   private/text/capsule.json     { "unlockAt": "2027-03-14T00:00:00+01:00", "title": "…", "message": "…", "voice": "capsule.mp3" }
- *   private/audio/music.(mp3|m4a|ogg)            optional licensed music
- *   private/audio/music.placeholder.mp3          generated test tone (used only if no real file)
- *   private/audio/<voice file from capsule.json> optional voice message
+ *   text/letter.md        final letter (blank line = new paragraph)
+ *   text/capsule.json     { "unlockAt": "2027-03-14T00:00:00+01:00", "title": "…", "message": "…", "voice": "capsule.mp3" }
+ *   audio/music.(mp3|m4a|ogg)        optional licensed music
+ *   audio/music.placeholder.mp3      generated test tone (used only if no real file)
+ *   audio/<voice from capsule.json>  optional voice message
  */
-import { existsSync, readFileSync, readdirSync } from 'node:fs'
-import path from 'node:path'
+import { getStore } from './storage'
 
-const root = () => /* turbopackIgnore: true */ process.cwd()
-const privateDir = (...p: string[]) => path.join(root(), 'private', ...p)
-
-/** Default draft shown until private/text/letter.md exists. Clearly marked as draft in the UI. */
+/** Default draft shown until text/letter.md exists. Clearly marked as draft in the UI. */
 export const DRAFT_LETTER = `E dashur Nadia,
 
 Sot, në ditën tënde të veçantë, dua të të dhuroj diçka që shkon përtej kohës dhe hapësirës.
@@ -27,15 +23,17 @@ Uroj që të vazhdosh të shkëlqesh gjithmonë, të ndjekësh ëndrrat e tua dh
 
 Gëzuar ditëlindjen, Nadia!`
 
-export function readLetter(): { paragraphs: string[]; draft: boolean } {
-  const file = privateDir('text', 'letter.md')
-  const text = existsSync(file) ? readFileSync(file, 'utf8') : DRAFT_LETTER
-  const paragraphs = text
+export function splitParagraphs(text: string): string[] {
+  return text
     .replace(/\r\n/g, '\n')
     .split(/\n\s*\n/)
     .map((p) => p.trim())
     .filter(Boolean)
-  return { paragraphs, draft: !existsSync(file) }
+}
+
+export async function readLetter(): Promise<{ paragraphs: string[]; draft: boolean }> {
+  const text = await getStore().readText('text/letter.md')
+  return { paragraphs: splitParagraphs(text ?? DRAFT_LETTER), draft: text === null }
 }
 
 export type CapsuleConfig = { unlockAt: string; title?: string; message: string; voice?: string }
@@ -44,24 +42,28 @@ export type CapsuleView =
   | { configured: true; locked: true; unlockAt: string }
   | { configured: true; locked: false; unlockAt: string; title: string; message: string; hasVoice: boolean }
 
-export function readCapsuleConfig(): CapsuleConfig | null {
-  const file = privateDir('text', 'capsule.json')
-  if (!existsSync(file)) return null
+export function parseCapsule(raw: string | null): CapsuleConfig | null {
+  if (!raw) return null
   try {
-    const cfg = JSON.parse(readFileSync(file, 'utf8')) as CapsuleConfig
+    const cfg = JSON.parse(raw) as CapsuleConfig
     if (!cfg.unlockAt || Number.isNaN(Date.parse(cfg.unlockAt)) || typeof cfg.message !== 'string') return null
+    if (cfg.voice !== undefined && !/^[\w][\w.-]*\.(mp3|m4a|aac|ogg|wav)$/i.test(cfg.voice)) delete cfg.voice
     return cfg
   } catch {
     return null
   }
 }
 
+export async function readCapsuleConfig(): Promise<CapsuleConfig | null> {
+  return parseCapsule(await getStore().readText('text/capsule.json'))
+}
+
 /**
  * The server decides — the message is never sent before unlockAt (server clock).
  * This protects against the recipient opening it early in the browser; it is not a cryptographic seal
- * (anyone with access to the server or the private/ folder can read it).
+ * (anyone with access to the server or the private storage can read it).
  */
-export function capsuleView(cfg: CapsuleConfig | null, now = new Date()): CapsuleView {
+export function capsuleView(cfg: CapsuleConfig | null, now = new Date(), voiceExists = false): CapsuleView {
   if (!cfg) return { configured: false }
   const unlockAt = new Date(cfg.unlockAt).toISOString()
   if (now.getTime() < Date.parse(cfg.unlockAt)) return { configured: true, locked: true, unlockAt }
@@ -71,38 +73,34 @@ export function capsuleView(cfg: CapsuleConfig | null, now = new Date()): Capsul
     unlockAt,
     title: cfg.title ?? 'Kapsula e kohës',
     message: cfg.message,
-    hasVoice: Boolean(cfg.voice && resolveAudioFile(cfg.voice)),
+    hasVoice: Boolean(cfg.voice) && voiceExists,
   }
 }
 
-const AUDIO_MIME: Record<string, string> = { '.mp3': 'audio/mpeg', '.m4a': 'audio/mp4', '.aac': 'audio/aac', '.ogg': 'audio/ogg', '.wav': 'audio/wav' }
-
-function resolveAudioFile(name: string): { file: string; mime: string } | null {
-  if (!/^[\w.-]+$/.test(name) || name.startsWith('.')) return null
-  const dir = privateDir('audio')
-  const file = path.resolve(dir, name)
-  const rel = path.relative(dir, file)
-  const mime = AUDIO_MIME[path.extname(name).toLowerCase()]
-  if (!mime || rel.startsWith('..') || path.isAbsolute(rel) || !existsSync(file)) return null
-  return { file, mime }
+export async function currentCapsuleView(now = new Date()): Promise<CapsuleView> {
+  const cfg = await readCapsuleConfig()
+  const voiceExists = cfg?.voice ? (await getStore().size(`audio/${cfg.voice}`)) !== null : false
+  return capsuleView(cfg, now, voiceExists)
 }
+
+const AUDIO_MIME: Record<string, string> = { mp3: 'audio/mpeg', m4a: 'audio/mp4', aac: 'audio/aac', ogg: 'audio/ogg', wav: 'audio/wav' }
+const mimeOf = (key: string) => AUDIO_MIME[key.split('.').pop()!.toLowerCase()] ?? null
 
 /** Music: a real licensed file wins over the generated placeholder. */
-export function resolveMusic(): { file: string; mime: string; placeholder: boolean } | null {
-  const dir = privateDir('audio')
-  if (!existsSync(dir)) return null
-  const files = readdirSync(dir)
-  const real = files.find((f) => /^music\.(mp3|m4a|aac|ogg|wav)$/i.test(f))
-  const fallback = files.find((f) => /^music\.placeholder\.(mp3|m4a|ogg)$/i.test(f))
-  const pick = real ?? fallback
-  const r = pick ? resolveAudioFile(pick) : null
-  return r ? { ...r, placeholder: !real } : null
+export async function resolveMusic(): Promise<{ key: string; mime: string; placeholder: boolean } | null> {
+  const keys = await getStore().list('audio/')
+  const real = keys.find((k) => /^audio\/music\.(mp3|m4a|aac|ogg|wav)$/i.test(k))
+  const fallback = keys.find((k) => /^audio\/music\.placeholder\.(mp3|m4a|ogg)$/i.test(k))
+  const key = real ?? fallback
+  const mime = key ? mimeOf(key) : null
+  return key && mime ? { key, mime, placeholder: !real } : null
 }
 
-/** Capsule voice — only once the capsule is unlocked. */
-export function resolveCapsuleVoice(now = new Date()): { file: string; mime: string } | null {
-  const cfg = readCapsuleConfig()
-  const view = capsuleView(cfg, now)
-  if (!cfg?.voice || !view.configured || view.locked) return null
-  return resolveAudioFile(cfg.voice)
+/** Capsule voice — only once the capsule is unlocked (server clock). */
+export async function resolveCapsuleVoice(now = new Date()): Promise<{ key: string; mime: string } | null> {
+  const cfg = await readCapsuleConfig()
+  if (!cfg?.voice || now.getTime() < Date.parse(cfg.unlockAt)) return null
+  const key = `audio/${cfg.voice}`
+  const mime = mimeOf(key)
+  return mime ? { key, mime } : null
 }

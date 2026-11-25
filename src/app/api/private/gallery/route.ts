@@ -12,10 +12,7 @@ export async function GET() {
   if (!(await isAuthenticated())) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401, headers: NO_STORE })
   }
-  const g = loadGallery()
-  if (!g) return NextResponse.json({ ok: true, items: [], needsPrepare: true }, { headers: NO_STORE })
-  return NextResponse.json(
-    { ok: true, source: g.index.source, items: g.index.items.map(toPublic) },
-    { headers: NO_STORE },
-  )
+  const index = await loadGallery()
+  if (!index) return NextResponse.json({ ok: true, items: [], needsPrepare: true }, { headers: NO_STORE })
+  return NextResponse.json({ ok: true, source: index.source, items: index.items.map(toPublic) }, { headers: NO_STORE })
 }

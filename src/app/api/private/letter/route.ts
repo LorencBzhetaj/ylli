@@ -10,6 +10,5 @@ const NO_STORE = { 'Cache-Control': 'private, no-store, max-age=0' }
 
 export async function GET() {
   if (!(await isAuthenticated())) return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401, headers: NO_STORE })
-  const letter = readLetter()
-  return NextResponse.json({ ok: true, ...letter, signature: dedication.giver }, { headers: NO_STORE })
+  return NextResponse.json({ ok: true, ...(await readLetter()), signature: dedication.giver }, { headers: NO_STORE })
 }
